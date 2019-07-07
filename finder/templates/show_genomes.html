@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check genomes</title>
+</head>
+<body>
+    <h1> Verify that the genomes are correct </h1>
+    <form action="/show_genomes" method="POST">
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit">
+    </form>
+    <br>
+    <a href="/id_search">Start Over</a>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Motif Search</title>
+</head>
+<body>
+    <h1>Create a new motif search.</h1>
+    <form action="/motif_search" method="POST">
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit">
+    </form>
+</body>
+</html>
