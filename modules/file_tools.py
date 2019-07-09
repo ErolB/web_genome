@@ -50,10 +50,10 @@ def parse_patric_fasta(data):
         header, sequence = gene.split('\n', 1)
         # process header
         header_segments = header.split('   ')   # sections are separated by groups of 3 spaces
-        fig_id = ''.join(header_segments[0].split('|')[0:2])
+        fig_id = '|'.join(header_segments[0].split('|')[0:2])
         name = header_segments[1]
         sequence = sequence.replace('\n', '')
-        genome[fig_id] = Gene(name=name, sequence=sequence, fig_id=fig_id)
+        genome[fig_id] = Gene(name=name, sequence=sequence, patric_id=fig_id)
     return genome
 
 

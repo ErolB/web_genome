@@ -14,20 +14,19 @@
 <body>
     <table>
         <tr>
+            <th></th>
         {% for heading in headings %}
             <th> {{heading}} </th>
         {% endfor %}
         </tr>
         {% for genome_result in results %}
         <tr>
-            <td> {{genome_result}} </td>
-            {% for links in results.genome_result %}
+            <td> {{genome_result.organism_name}} </td>
             <td>
-                {% for item in links %}
-                <a href="{{item.url}}">{{item.name}}</a>
-                {% endfor %}
-            </td>
+            {% for match in genome_result.motifs %}
+                <a href={{match.url}}> {{match.name}} </a><br>
             {% endfor %}
+            </td>
         </tr>
         {% endfor %}
     </table>

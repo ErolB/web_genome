@@ -1,14 +1,9 @@
 class Gene(object):
-    def __init__(self, name, sequence, description=None, patric_id=None, fig_id=None):
+    def __init__(self, name, sequence, description=None, patric_id=None):
         self.name = name
         self.sequence = sequence
         self.description = description
         self.patric_id = patric_id
-        if fig_id:
-            self.fig_id = fig_id
-        else:
-            self.fig_id = 'not available'
-
     def __str__(self):
         return '%s (%s)' % (self.name, self.patric_id)
 

@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.views.generic.edit import DeleteView
 from django.http import HttpResponse
 from django.template import loader
 from django import forms
@@ -69,14 +70,16 @@ def show_genomes(request):
             genome_entry = GenomeModel(organism=genome.organism, genome_id=genome.id)
             genome_entry.save()
             for gene in genome.genes.values():
-                gene_entry = GeneModel(name=gene.name, sequence=gene.sequence, in_genome=genome_entry, id=None)
+                print(gene.patric_id)
+                gene_entry = GeneModel(name=gene.name, sequence=gene.sequence, in_genome=genome_entry, patric_id=gene.patric_id)
                 gene_entry.save()
         MotifSearchModel.objects.all().delete()
         return redirect('/select_method')
 
 
 def select_method(request):
-    return render(request, 'select_method.html', {})
+    motif_searches = MotifSearchModel.objects.all()
+    return render(request, 'select_method.html', {'motif_searches': motif_searches})
 
 
 def motif_search(request):
@@ -95,20 +98,28 @@ def run_search(request):
     all_motifs = MotifSearchModel.objects.all()
     genome_names = [item.organism for item in all_genomes]
     motif_names = [item.gene_name for item in all_motifs]
-    result_dict = {}
+    results = []
     for genome in all_genomes:
         genome_result = {}
-        organism_name = genome.organism
-        genome_id = genome.genome_id
-        relevant_genes = GeneModel.objects.filter(in_genome__genome_id=genome_id)
+        genome_result['organism_name'] = genome.organism
+        genome_result['genome_id'] = genome.genome_id
+        relevant_genes = GeneModel.objects.filter(in_genome__genome_id=genome.genome_id)
         for motif in all_motifs:
-            genome_result[motif.gene_name] = []
+            genome_result['motifs'] = []
             pattern = search_tools.pattern_converter(motif.motif_text)
             for gene in relevant_genes:
                 if re.findall(pattern, gene.sequence):
-                    genome_result[motif.gene_name].append('https://www.patricbrc.org/view/Feature/{}#view_tab=overview'.format(gene.fig_id))
-        result_dict[organism_name] = genome_result
+                    url = 'https://www.patricbrc.org/view/Feature/%s#view_tab=overview' % str(gene.patric_id)
+                    print(url)
+                    genome_result['motifs'].append({'url': url, 'name': gene.name})
+        results.append(genome_result)
     print('here')
-    print(result_dict)
+    print(results)
     headings = [motif.gene_name for motif in all_motifs]
-    return render(request, 'result_page.html', {'results': result_dict, 'headings': headings})
+
+    return render(request, 'result_page.html', {'results': results, 'headings': headings})
+
+
+class DeleteMotif(DeleteView):
+    model = MotifSearchModel
+    success_url = '/select_method'
