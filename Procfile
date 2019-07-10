@@ -1,1 +1,1 @@
-web: python3 ./manage.py runserver
+web: guincorn genome/wsgi.py
