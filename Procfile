@@ -1,1 +1,1 @@
-web: guincorn genome/wsgi.py
+web: guincorn finder.wsgi
