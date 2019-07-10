@@ -1,1 +1,1 @@
-web: guincorn finder.wsgi
+web: gunicorn finder.wsgi --log-file -
