@@ -1,1 +1,1 @@
-web: gunicorn genome.wsgi.application
+web: gunicorn genome.wsgi --log-file -
