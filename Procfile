@@ -1,1 +1,1 @@
-web: gunicorn finder
+web: python3 ./manage.py runserver
