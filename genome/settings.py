@@ -25,7 +25,7 @@ SECRET_KEY = '2$u$efg^vv_r%(cm4-jozel2bj@wr7+8sm4$46fj9upbn%ek--'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['cryptic-cliffs-10464.herokuapp.com']
+ALLOWED_HOSTS = ['cryptic-cliffs-10464.herokuapp.com', 'localhost']
 
 
 # Application definition

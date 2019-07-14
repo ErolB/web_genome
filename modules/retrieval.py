@@ -5,6 +5,7 @@ import os
 import ftplib
 import csv
 import json
+import requests
 
 from modules.utils import *
 from modules.file_tools import *
@@ -26,6 +27,7 @@ def search_by_name(organism_name):
     return genomes
 
 # search PATRIC by taxon ID
+'''
 def search_by_id(organism_name):
     output = subprocess.check_output('p3-all-genomes --eq genome_id,%s --attr organism_name' % organism_name, shell=True)
     results = csv.DictReader(output.decode().split('\n'), delimiter='\t')
@@ -35,6 +37,19 @@ def search_by_id(organism_name):
         new_genome = Genome(item['genome.organism_name'], id=item['genome.genome_id'])
         genomes.append(new_genome)
     return genomes
+'''
+
+# uses API to search by taxon ID
+def search_by_ids(id_list):
+    genomes = []
+    request_url = "https://www.patricbrc.org/api/genome/?in(genome_id,(%s))&select(genome_name, genome_id)&limit(100000,0)" \
+                  "&http_accept=application/json" % ','.join(id_list)
+    raw_data = requests.get(request_url).content
+    for item in json.loads(raw_data):
+        new_genome = Genome(item['genome_name'], item['genome_id'])
+        genomes.append(new_genome)
+    return genomes
+
 
 # retrieve gene sequences from PATRIC (if genome was obtained there)
 def retrieve_sequences(genome_info):

@@ -40,11 +40,7 @@ def show_genomes(request):
                 temp.append(item)
         id_list = temp
         # get genomes from PATRIC
-        genome_list = []
-        for item in id_list:
-            patric_genomes = retrieval.search_by_id(item)
-            if patric_genomes:
-                genome_list.append(patric_genomes[0])
+        genome_list = retrieval.search_by_ids(id_list)
         # render page
         genome_info = {genome.id: {'id': genome.id, 'name': genome.organism} for genome in genome_list}
         genome_text =[(json.dumps(genome_info[genome.id]), '%s (%s)' % (genome.organism, genome.id)) for genome in genome_list]
