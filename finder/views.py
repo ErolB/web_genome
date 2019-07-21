@@ -1,16 +1,22 @@
 from django.shortcuts import render, redirect
 from django.views.generic.edit import DeleteView
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
 from django import forms
+from celery.task.control import inspect
+
 from . forms import *
 from . models import *
+from . tasks import *
 from modules import retrieval
 from modules import search_tools
 
 import re
 import json
+import time
+import multiprocessing
 
+genome_load_process = []
 
 def start(request):
     start_page = loader.get_template('start.html')
@@ -61,15 +67,22 @@ def show_genomes(request):
             if pair[0] == 'genomes':
                 approved_genomes = pair[1]
         print(approved_genomes)
-        genome_objs = retrieval.retrieve_sequences(approved_genomes)
-        for genome in genome_objs:
-            genome_entry = GenomeModel(organism=genome.organism, genome_id=genome.id)
-            genome_entry.save()
-            for gene in genome.genes.values():
-                gene_entry = GeneModel(name=gene.name, sequence=gene.sequence, in_genome=genome_entry, patric_id=gene.patric_id)
-                gene_entry.save()
+        # call Celery task
+        create_genomes.delay(approved_genomes)
         MotifSearchModel.objects.all().delete()
-        return redirect('/select_method')
+        return redirect('/wait_for_genomes')
+
+
+def wait_for_genomes(request):
+    i = inspect()
+    time.sleep(5)
+    print(i.active())
+    active_tasks = list(i.active().values())[0]
+    if active_tasks:
+        time.sleep(5)  # wait 10 seconds if there is an active task
+        return HttpResponseRedirect('/wait_for_genomes')
+    else:
+        return HttpResponseRedirect('/select_method')
 
 
 def select_method(request):
@@ -99,19 +112,20 @@ def run_search(request):
         genome_result['organism_name'] = genome.organism
         genome_result['genome_id'] = genome.genome_id
         relevant_genes = GeneModel.objects.filter(in_genome__genome_id=genome.genome_id)
+        genome_result['motifs'] = []
         for motif in all_motifs:
-            genome_result['motifs'] = []
             pattern = search_tools.pattern_converter(motif.motif_text)
+            motif_entry = {'name': motif.gene_name, 'matches': []}
             for gene in relevant_genes:
                 if re.findall(pattern, gene.sequence):
                     url = 'https://www.patricbrc.org/view/Feature/%s#view_tab=overview' % str(gene.patric_id)
                     print(url)
-                    genome_result['motifs'].append({'url': url, 'name': gene.name})
+                    motif_entry['matches'].append({'url': url, 'name': gene.name})
+            genome_result['motifs'].append(motif_entry)
         results.append(genome_result)
     print('here')
     print(results)
     headings = [motif.gene_name for motif in all_motifs]
-
     return render(request, 'result_page.html', {'results': results, 'headings': headings})
 
 
