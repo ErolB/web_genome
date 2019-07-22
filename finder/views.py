@@ -75,12 +75,12 @@ def show_genomes(request):
 
 def wait_for_genomes(request):
     i = inspect()
-    time.sleep(5)
+    time.sleep(0.5)
     print(i.active())
     active_tasks = list(i.active().values())[0]
     if active_tasks:
-        time.sleep(5)  # wait 10 seconds if there is an active task
-        return HttpResponseRedirect('/wait_for_genomes')
+        #time.sleep(5)  # wait 10 seconds if there is an active task
+        return render(request, 'waiting.html')
     else:
         return HttpResponseRedirect('/select_method')
 
