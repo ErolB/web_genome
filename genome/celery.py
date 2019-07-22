@@ -7,6 +7,9 @@ from django.conf import settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'genome.settings')
 app = Celery('genome')
 
+app.conf.update(BROKER_URL=os.environ['REDIS_URL'],
+                CELERY_RESULT_BACKEND=os.environ['REDIS_URL'])
+
 # Using a string here means the worker will not have to
 # pickle the object when using Windows.
 app.config_from_object('django.conf:settings')
