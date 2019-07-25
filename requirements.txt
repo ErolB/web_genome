@@ -4,3 +4,4 @@ requests>=2.22.0
 celery==4.3.0
 redis>=3.2.1
 django-redis-cache>=2.0.0
+django-celery>=3.1.15
