@@ -7,7 +7,7 @@ from celery.task.control import inspect
 
 from . forms import *
 from . models import *
-from finder.tasks import create_genome
+from app.finder.tasks import create_genome
 from modules import retrieval
 from modules import search_tools
 
