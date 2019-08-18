@@ -136,8 +136,9 @@ CACHES = {
 #BROKER_URL = 'redis://localhost:6379'
 BROKER_URL = os.environ.get("REDISCLOUD_URL", "django://")
 #CELERY_RESULT_BACKEND = 'redis://localhost:6379'
-
-#BROKER_URL = os.environ.get("REDISCLOUD_URL", "django://")
+BROKER_TRANSPORT_OPTIONS = {
+    "max_connections": 2,
+}
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
