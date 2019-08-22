@@ -9,9 +9,10 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-
-import os
 import djcelery
+import os
+
+djcelery.setup_loader()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -123,8 +124,6 @@ STATIC_URL = '/static/'
 
 
 # Celery
-djcelery.setup_loader()
-'''
 CACHES = {
     "default": {
          "BACKEND": "redis_cache.RedisCache",
@@ -133,12 +132,10 @@ CACHES = {
 }
 
 '''
-#BROKER_URL = 'redis://localhost:6379'
+BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+'''
 BROKER_URL = os.environ.get("REDISCLOUD_URL", "django://")
-#CELERY_RESULT_BACKEND = 'redis://localhost:6379'
-BROKER_TRANSPORT_OPTIONS = {
-    "max_connections": 2,
-}
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
