@@ -75,7 +75,7 @@ def show_genomes(request):
 
 def wait_for_genomes(request):
     i = inspect()
-    time.sleep(5)
+    print(i)
     print(i.active())
     print(i.scheduled())
     active_tasks = list(i.active().values())[0]
