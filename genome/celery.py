@@ -6,6 +6,7 @@ from django.conf import settings
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'genome.settings')
 #os.environ.setdefault('REDIS_URL', 'redis://localhost:6379/0')
+print('Redis URL: %s' % os.environ['REDIS_URL'])
 app = Celery('genome_app', broker=os.environ['REDIS_URL'], backend=os.environ['REDIS_URL'])
 
 app.conf.update(BROKER_URL=os.environ['REDIS_URL'],
