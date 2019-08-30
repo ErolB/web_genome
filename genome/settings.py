@@ -131,9 +131,9 @@ CACHES = {
     }
 }
 
-
-CELERY_BROKER_URL = os.environ['REDIS_URL']
-CELERY_RESULT_BACKEND = os.environ['REDIS_URL']
+redis_url = 'redis://h:pe133a585ca010fe846e05901e80acc9dcd0a7c23a7dc80c4ab22ae8cdaed7c1c@ec2-3-221-165-119.compute-1.amazonaws.com:23889'
+CELERY_BROKER_URL = redis_url
+CELERY_RESULT_BACKEND = redis_url
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
