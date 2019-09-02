@@ -124,18 +124,18 @@ STATIC_URL = '/static/'
 
 
 # Celery
+'''
 CACHES = {
     "default": {
          "BACKEND": "redis_cache.RedisCache",
          "LOCATION": os.environ['REDIS_URL'],
     }
 }
+'''
 
-
-CELERY_BROKER_URL = os.environ['REDIS_URL']
-CELERY_RESULT_BACKEND = os.environ['REDIS_URL']
+CELERY_BROKER_URL = 'amqp://localhost'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_IMPORTS = ("finder.tasks", )
+CELERY_IMPORTS = ("finder.tasks.create_genomes",)
 

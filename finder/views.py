@@ -5,9 +5,9 @@ from django.template import loader
 from django import forms
 from celery.task.control import inspect
 
-from . forms import *
-from . models import *
-from . tasks import *
+from finder.forms import *
+from finder.models import *
+from finder.tasks import *
 from modules import retrieval
 from modules import search_tools
 

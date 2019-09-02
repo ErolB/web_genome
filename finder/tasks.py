@@ -1,11 +1,11 @@
-from celery.decorators import task
+from celery import shared_task
 from celery.utils.log import get_task_logger
 from modules import retrieval
 
-from . models import *
+from finder.models import *
 
 
-@task(name='loading')
+@shared_task
 def create_genomes(approved_genomes):
     genome_objs = retrieval.retrieve_sequences(approved_genomes)
     for genome in genome_objs:

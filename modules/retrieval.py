@@ -6,6 +6,8 @@ import ftplib
 import csv
 import json
 import requests
+import threading
+import queue
 
 from modules.utils import *
 from modules.file_tools import *
@@ -52,25 +54,50 @@ def search_by_ids(id_list):
 
 
 # retrieve gene sequences from PATRIC (if genome was obtained there)
-def retrieve_sequences(genome_info):
-    genomes = []
-    ftp = ftplib.FTP('ftp.patricbrc.org')
-    ftp.login()
-    for entry in genome_info:
-        entry = json.loads(entry)
-        entry_id = entry['id']
-        entry_name = entry['name']
-        raw_text = []
-        ftp.retrbinary('RETR genomes/%s/%s.PATRIC.faa' % (entry_id, entry_id), raw_text.append, 1024)
-        file_text = ''
-        for item in raw_text:
-            file_text += item.decode('utf-8')
-        genome = Genome(organism=entry_name, id=entry_id)
-        gene_dict = parse_patric_fasta(file_text)
-        for gene in gene_dict.keys():
-            genome.add_gene_obj(gene, gene_dict[gene])
-        genomes.append(genome)
-    return genomes
+def retrieve_sequences(genome_info, worker_count=5):
+    genomes = queue.Queue(maxsize=100)
+    def get_genomes(entry_list, data_queue):
+        for entry in entry_list:
+            ftp = ftplib.FTP('ftp.patricbrc.org')
+            ftp.login()
+            entry = json.loads(entry)
+            entry_id = entry['id']
+            entry_name = entry['name']
+            raw_text = []
+            ftp.retrbinary('RETR genomes/%s/%s.PATRIC.faa' % (entry_id, entry_id), raw_text.append, 1024)
+            file_text = ''
+            for item in raw_text:
+                file_text += item.decode('utf-8')
+            genome = Genome(organism=entry_name, id=entry_id)
+            gene_dict = parse_patric_fasta(file_text)
+            for gene in gene_dict.keys():
+                genome.add_gene_obj(gene, gene_dict[gene])
+            data_queue.put(genome)
+    # use multiple threads to get genomes
+    max_load = int(len(genome_info)/worker_count) + 1
+    threads = []
+    done = False
+    for i in range(worker_count):
+        if done:
+            break
+        thread_tasks = []
+        for j in range(max_load):
+            current_index = (max_load*i) + j
+            if current_index >= len(genome_info):
+                done = not done
+                break
+            thread_tasks.append(genome_info[current_index])
+        current_thread = threading.Thread(target=get_genomes, args=(thread_tasks, genomes))
+        current_thread.start()
+        threads.append(current_thread)
+    # wait for threads to finish
+    for thread in threads:
+        thread.join()
+    # retrieve data
+    genome_list = []
+    while not genomes.empty():
+        genome_list.append(genomes.get())
+    return genome_list
 
 # reads a FASTA file and creates a list of Genome objects
 def read_genomes(file_path):
