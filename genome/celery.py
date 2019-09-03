@@ -8,7 +8,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'genome.settings')
 #os.environ.setdefault('REDIS_URL', 'redis://localhost:6379/0')
 #os.environ.setdefault('REDIS_URL', 'redis://h:pe133a585ca010fe846e05901e80acc9dcd0a7c23a7dc80c4ab22ae8cdaed7c1c@ec2-3-221-165-119.compute-1.amazonaws.com:23889')
 #print('Redis URL: %s' % os.environ['REDIS_URL'])
-app = Celery('genome')
+app = Celery('app')
 '''
 app.conf.broker_url = os.environ['REDIS_URL']
 app.conf.update(BROKER_URL=os.environ['REDIS_URL'],
