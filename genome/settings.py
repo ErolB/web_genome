@@ -133,9 +133,10 @@ CACHES = {
 }
 '''
 
-CELERY_BROKER_URL = 'amqp://localhost'
+#CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_BROKER_URL = os.environ.get("CLOUDAMQP_URL", "django://")
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_IMPORTS = ("finder.tasks.create_genomes",)
+CELERY_IMPORTS = ("finder.tasks",)
 
