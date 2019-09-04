@@ -9,6 +9,7 @@ from finder.models import *
 def create_genomes(approved_genomes):
     genome_objs = retrieval.retrieve_sequences(approved_genomes)
     for genome in genome_objs:
+        print(genome)
         genome_entry = GenomeModel(organism=genome.organism, genome_id=genome.id)
         genome_entry.save()
         for gene in genome.genes.values():
