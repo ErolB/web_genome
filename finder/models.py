@@ -9,10 +9,10 @@ class GenomeModel(models.Model):
 
 # protein-coding gene
 class GeneModel(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=1000)
     sequence = models.CharField(max_length=1000)
-    patric_id = models.CharField(max_length=100)
-    fig_id = models.CharField(max_length=100)
+    patric_id = models.CharField(max_length=1000)
+    fig_id = models.CharField(max_length=1000)
     in_genome = models.ForeignKey(GenomeModel, on_delete=models.CASCADE)
     description = models.CharField(max_length=1000)
 
