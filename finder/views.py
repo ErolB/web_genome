@@ -47,6 +47,8 @@ def show_genomes(request):
         id_list = temp
         # get genomes from PATRIC
         genome_list = retrieval.search_by_ids(id_list)
+        if genome_list == 'error':
+            return HttpResponse('Cannot reach PATRIC. Try again later')
         # render page
         genome_info = {genome.id: {'id': genome.id, 'name': genome.organism} for genome in genome_list}
         genome_text =[(json.dumps(genome_info[genome.id]), '%s (%s)' % (genome.organism, genome.id)) for genome in genome_list]
