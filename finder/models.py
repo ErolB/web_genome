@@ -3,18 +3,18 @@ from django.db import models
 
 # organism genome
 class GenomeModel(models.Model):
-    organism = models.CharField(max_length=100)
-    genome_id = models.CharField(max_length=100)
+    organism = models.CharField(max_length=1000)
+    genome_id = models.CharField(max_length=1000)
 
 
 # protein-coding gene
 class GeneModel(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=1000)
     sequence = models.CharField(max_length=10000)
-    patric_id = models.CharField(max_length=300)
-    fig_id = models.CharField(max_length=400)
+    patric_id = models.CharField(max_length=100)
+    fig_id = models.CharField(max_length=100)
     in_genome = models.ForeignKey(GenomeModel, on_delete=models.CASCADE)
-    description = models.CharField(max_length=250)
+    description = models.CharField(max_length=1000)
 
 # search method
 class MotifSearchModel(models.Model):
