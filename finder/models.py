@@ -19,6 +19,10 @@ class GeneModel(models.Model):
 # search method
 class MotifSearchModel(models.Model):
     gene_name = models.CharField(max_length=100)
-    motif_text = models.CharField(max_length=1000)
+    #motif_text = models.CharField(max_length=1000)
 
+# motif objects (many motifs may be used in a single search)
+class MotifModel(models.Model):
+    motif_text = models.CharField(max_length=1000)
+    in_search = models.ForeignKey(MotifSearchModel, on_delete=models.CASCADE)
 

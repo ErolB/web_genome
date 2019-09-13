@@ -96,9 +96,15 @@ def select_method(request):
 def motif_search(request):
     if 'gene_name' in request.POST.keys():
         gene_name = request.POST['gene_name']
-        motif = request.POST['motif']
-        motif_entry = MotifSearchModel(gene_name=gene_name, motif_text=motif)
-        motif_entry.save()
+        motif_list = request.POST['motif_list']
+        motif_search_entry = MotifSearchModel(gene_name=gene_name)
+        motif_search_entry.save()
+        for motif_text in motif_list.split('\n'):
+            motif_text = motif_text.strip()
+            if len(motif_text) == 0:
+                continue  # skip blanks
+            motif_entry = MotifModel(motif_text=motif_text, in_search=motif_search_entry)
+            motif_entry.save()
         return redirect('/select_method')
     else:
         form = MotifSearchForm()
@@ -117,12 +123,19 @@ def run_search(request):
         relevant_genes = GeneModel.objects.filter(in_genome__genome_id=genome.genome_id)
         genome_result['motifs'] = []
         for motif in all_motifs:
-            pattern = search_tools.pattern_converter(motif.motif_text)
+            pattern_entries = MotifModel.objects.filter(in_search__gene_name=motif.gene_name)
+            pattern_list = []
+            for item in pattern_entries:
+                pattern_list.append(search_tools.pattern_converter(item.motif_text))
             motif_entry = {'name': motif.gene_name, 'matches': []}
             for gene in relevant_genes:
-                if re.findall(pattern, gene.sequence):
+                gene_found = True
+                for pattern in pattern_list:
+                    if not re.findall(pattern, gene.sequence):
+                        gene_found = False
+                        break
+                if gene_found:
                     url = 'https://www.patricbrc.org/view/Feature/%s#view_tab=overview' % str(gene.patric_id)
-                    print(url)
                     motif_entry['matches'].append({'url': url, 'name': gene.name})
             genome_result['motifs'].append(motif_entry)
         results.append(genome_result)

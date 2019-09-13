@@ -5,4 +5,4 @@ class IdSearch(forms.Form):
 
 class MotifSearchForm(forms.Form):
     gene_name = forms.CharField(label='Enter Gene Name')
-    motif = forms.CharField(label='Enter Motif Pattern')
+    motif_list = forms.CharField(widget=forms.Textarea, label='Enter Motif Patterns (one per line)')
