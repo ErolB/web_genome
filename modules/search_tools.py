@@ -4,6 +4,7 @@ import re
 
 from modules import utils, file_tools
 
+
 class HMMSearch(object):
     def __init__(self, file_name):
         self.file = file_name
@@ -18,6 +19,7 @@ class HMMSearch(object):
         features = hmm_scan(genome.organism, self.file, threshold=self.threshold)
         return features
 
+
 class MotifSearch(object):
     def __init__(self, motif_file):
         input_motifs = open(motif_file, 'r').readlines()
@@ -28,6 +30,7 @@ class MotifSearch(object):
     def run(self, genome):
         features = motif_scan_genome(genome, self.motif_dict.values())
         return features
+
 
 class PSIBlastSearch(object):
     def __init__(self, pssm_file):
@@ -42,6 +45,16 @@ class PSIBlastSearch(object):
         features = search_msa(genome.organism, self.pssm_file, threshold=self.threshold)
         return features
 
+
+# writes sequences to a FASTA file_path
+def write_fasta(file_name, genes):
+    fasta_file = open(file_name, 'w+')
+    for name, seq in genes.items():
+        fasta_file.write('>'+name+'\n')
+        fasta_file.write(seq+'\n')
+    fasta_file.close()
+
+
 # parses HMMER output
 def hmmer_parse(text):
     if 'No hits detected' in text:
@@ -51,16 +64,17 @@ def hmmer_parse(text):
         identifiers = [item[3:].strip() for item in lines if '>>' in item]
         return identifiers
 
+
 # scans using HMMs
 def hmm_scan(genome_name, hmm_name, threshold=0.000001):
-    feature_list = []
-    os.chdir('temp_files')
+    print(threshold)
     process = subprocess.run('hmmsearch -E %s %s %s' % (str(threshold), hmm_name, genome_name),
         stdout=subprocess.PIPE, shell=True)  # E-value cutoff is 10^-6
-    os.chdir('..')
     block = process.stdout.decode()
+    print(block)
     results = hmmer_parse(block)
     return results
+
 
 # parses PSI-BLAST output
 def psiblast_parse(text):
@@ -73,6 +87,7 @@ def psiblast_parse(text):
             identifiers.append(line[1:].strip())
     return identifiers
 
+
 # scans using PSI-BLAST
 def search_msa(genome_name, msa_path, threshold=0.000001):
     process1 = subprocess.run('makeblastdb -in temp_files/%s -dbtype prot -out temp_files/%s' %
@@ -81,6 +96,7 @@ def search_msa(genome_name, msa_path, threshold=0.000001):
         (genome_name,msa_path,str(threshold)), stdout=subprocess.PIPE, shell=True)
     output = process2.stdout.decode()
     return psiblast_parse(output)
+
 
 # converts a pattern in PROSITE format to standard regualar expression format
 def pattern_converter(prosite_pattern):
@@ -102,7 +118,7 @@ def pattern_converter(prosite_pattern):
         # handle single values
         else:
             aa = re.findall('(?=\(?)\w', item)[0]
-            if aa == 'x':  # check for wildcarda
+            if aa == 'x':  # check for wildcard
                 output_pattern += "\w"
             else:
                 output_pattern += aa
@@ -112,6 +128,7 @@ def pattern_converter(prosite_pattern):
             multiplier = re.sub('(\(|\))', '', multiplier[0])
             output_pattern += '{' + multiplier + '}'
     return output_pattern
+
 
 def motif_scan_genome(genome_obj, patterns):
     features = []

@@ -12,6 +12,7 @@
     </style>
 </head>
 <body>
+    <a href="/export/{{report}}/">Export as CSV</a>
     <table>
         <tr>
             <th></th>
@@ -23,9 +24,16 @@
         <tr>
             <td> {{genome_result.organism_name}} </td>
             {% for motif in genome_result.motifs %}
-                {{motif.name}}
                 <td>
                     {% for match in motif.matches %}
+                        <a href={{match.url}}> {{match.name}} </a><br>
+                        <br>
+                    {% endfor %}
+                </td>
+            {% endfor %}
+            {% for hmm in genome_result.hmms %}
+                <td>
+                    {% for match in hmm.matches %}
                         <a href={{match.url}}> {{match.name}} </a><br>
                     {% endfor %}
                 </td>

@@ -46,7 +46,10 @@ def search_by_ids(id_list):
     genomes = []
     request_url = "https://www.patricbrc.org/api/genome/?in(genome_id,(%s))&select(genome_name, genome_id)&limit(100000,0)" \
                   "&http_accept=application/json" % ','.join(id_list)
-    raw_data = requests.get(request_url).content
+    try:
+        raw_data = requests.get(request_url).content
+    except:
+        return 'error'
     for item in json.loads(raw_data):
         new_genome = Genome(item['genome_name'], item['genome_id'])
         genomes.append(new_genome)

@@ -16,5 +16,11 @@
         <a href="{% url 'delete_motif' search.id %}">Delete</a>
         <br>
     {% endfor %}
+    <h2>HMM Searches</h2>
+    {% for search in hmm_searches %}
+        <h3>{{ search.gene_name }}</h3>
+        <a href="{% url 'delete_hmm' search.id %}">Delete</a>
+        <br>
+    {% endfor %}
 </body>
 </html>

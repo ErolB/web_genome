@@ -13,10 +13,12 @@ from modules import search_tools
 
 import re
 import json
-import time
-import multiprocessing
+import os
+import random
+import csv
 
 genome_load_process = []
+
 
 def start(request):
     start_page = loader.get_template('start.html')
@@ -72,6 +74,7 @@ def show_genomes(request):
         # call Celery task
         create_genomes.delay(approved_genomes)
         MotifSearchModel.objects.all().delete()
+        HMMSearchModel.objects.all().delete()
         return redirect('/wait_for_genomes')
 
 
@@ -90,7 +93,8 @@ def wait_for_genomes(request):
 
 def select_method(request):
     motif_searches = MotifSearchModel.objects.all()
-    return render(request, 'select_method.html', {'motif_searches': motif_searches})
+    hmm_searches = HMMSearchModel.objects.all()
+    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'hmm_searches': hmm_searches})
 
 
 def motif_search(request):
@@ -110,9 +114,27 @@ def motif_search(request):
         form = MotifSearchForm()
         return render(request, 'motif_search.html', {'form': form})
 
+
+def hmm_search(request):
+    if 'gene_name' in request.POST.keys():
+        gene_name = request.POST['gene_name']
+        hmm_file_obj = list(request.FILES.values())[0]
+        file_name = 'hmms/%s.hmm' % gene_name
+        with open(file_name, 'wb') as hmm_file:
+            hmm_file.write(hmm_file_obj.read())
+        threshold = float(request.POST['cutoff'])
+        hmm_search_entry = HMMSearchModel(hmm_path=file_name, threshold=threshold, gene_name=gene_name)
+        hmm_search_entry.save()
+        return redirect('/select_method')
+    else:
+        form = HMMSearchForm()
+        return render(request, 'hmm_search.html', {'form': form})
+
+
 def run_search(request):
     all_genomes = GenomeModel.objects.all()
     all_motifs = MotifSearchModel.objects.all()
+    all_hmms = HMMSearchModel.objects.all()
     genome_names = [item.organism for item in all_genomes]
     motif_names = [item.gene_name for item in all_motifs]
     results = []
@@ -122,6 +144,7 @@ def run_search(request):
         genome_result['genome_id'] = genome.genome_id
         relevant_genes = GeneModel.objects.filter(in_genome__genome_id=genome.genome_id)
         genome_result['motifs'] = []
+        # process motif searches
         for motif in all_motifs:
             pattern_entries = MotifModel.objects.filter(in_search__gene_name=motif.gene_name)
             pattern_list = []
@@ -138,13 +161,57 @@ def run_search(request):
                     url = 'https://www.patricbrc.org/view/Feature/%s#view_tab=overview' % str(gene.patric_id)
                     motif_entry['matches'].append({'url': url, 'name': gene.name})
             genome_result['motifs'].append(motif_entry)
+        # process HMM searches
+        gene_dict = {gene.patric_id: gene.sequence for gene in relevant_genes}
+        search_tools.write_fasta('temp_files/'+str(genome.genome_id), gene_dict)
+        genome_result['hmms'] = []
+        for hmm in all_hmms:
+            hmm_entry = {'name': hmm.gene_name, 'matches': []}
+            fig_ids = search_tools.hmm_scan('temp_files/'+str(genome.genome_id), hmm.hmm_path, hmm.threshold)
+            print(fig_ids)
+            for fig in fig_ids:
+                url = 'https://www.patricbrc.org/view/Feature/%s#view_tab=overview' % str(fig)
+                gene_name = [gene.name for gene in relevant_genes if gene.patric_id == fig][0]
+                hmm_entry['matches'].append({'url': url, 'name': gene_name})
+            genome_result['hmms'].append(hmm_entry)
         results.append(genome_result)
-    print('here')
-    print(results)
     headings = [motif.gene_name for motif in all_motifs]
-    return render(request, 'result_page.html', {'results': results, 'headings': headings})
+    headings.extend([hmm.gene_name for hmm in all_hmms])
+    # write report file (to be downloaded later)
+    used_ids = os.listdir('reports/')
+    report_id = str(random.randint(1000000, 9999999))
+    while report_id in used_ids:  # this should be skipped in most cases
+        report_id = str(random.randint(1000000, 9999999))
+    with open('reports/%s.csv' % report_id, 'w') as report_file:
+        hmm_names = [item.gene_name for item in all_hmms]
+        motif_names = [item.gene_name for item in all_motifs]
+        column_names = ['organism'] + hmm_names + motif_names
+        writer = csv.DictWriter(fieldnames=column_names, f=report_file)
+        writer.writeheader()
+        for genome_entry in results:
+            new_row = {'organism': genome_entry['organism_name']}
+            for motif_entry in genome_entry['motifs']:
+                url_list = ' / '.join([item['url'] for item in motif_entry['matches']])
+                new_row[motif_entry['name']] = url_list
+            for hmm_entry in genome_entry['hmms']:
+                url_list = ' / '.join([item['url'] for item in hmm_entry['matches']])
+                new_row[hmm_entry['name']] = url_list
+            writer.writerow(new_row)
+
+    return render(request, 'result_page.html', {'results': results, 'headings': headings, 'report': int(report_id)})
+
+
+def download(request, report_id):
+    with open('reports/%s.csv' % report_id, 'r') as report_file:
+        response = HttpResponse(report_file.read(), content_type="application/vnd.ms-excel")
+    return response
 
 
 class DeleteMotif(DeleteView):
     model = MotifSearchModel
+    success_url = '/select_method'
+
+
+class DeleteHMM(DeleteView):
+    model = HMMSearchModel
     success_url = '/select_method'
