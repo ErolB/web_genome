@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1> Verify that the genomes are correct </h1>
-    <form action="/show_genomes" method="POST">
+    <form action="/show_genomes/{{job_id}}" method="POST">
         {% csrf_token %}
         {{ form }}
         <input type="submit">

@@ -1,4 +1,25 @@
 from django.db import models
+from datetime import datetime
+
+
+# jobs
+class JobModel(models.Model):
+    job_id = models.AutoField(primary_key=True)
+    start_time = models.DateTimeField(default=datetime.now)
+
+
+# data retrieval tasks
+class TaskModel(models.Model):
+    task_id = models.CharField(max_length=100)
+    job = models.ForeignKey(JobModel, on_delete=models.CASCADE)
+
+
+# mapping genomes to jobs
+# this prevents loading genomes redundantly
+class GenomeUse(models.Model):
+    genome_id = models.CharField(max_length=1000)
+    last_used = models.DateTimeField(default=datetime.now)
+    job_id = models.IntegerField()
 
 
 # organism genome
@@ -20,7 +41,7 @@ class GeneModel(models.Model):
 # search method
 class MotifSearchModel(models.Model):
     gene_name = models.CharField(max_length=100)
-    #motif_text = models.CharField(max_length=1000)
+    job = models.ForeignKey(JobModel, on_delete=models.CASCADE, default=None)
 
 
 # motif objects (many motifs may be used in a single search)
@@ -33,4 +54,5 @@ class MotifModel(models.Model):
 class HMMSearchModel(models.Model):
     hmm_path = models.CharField(max_length=500)
     threshold = models.FloatField()
-    gene_name = models.CharField(max_length=100)
+    gene_name = models.CharField(max_length=200)
+    job = models.ForeignKey(JobModel, on_delete=models.CASCADE, default=None)

@@ -26,16 +26,17 @@ def start(request):
 
 
 def id_search(request):
-    # ensure that database is clear (not ideal for multiple users)
-    GeneModel.objects.all().delete()
-    GenomeModel.objects.all().delete()
+    # create new job
+    job = JobModel()
+    job.save()
+    job_id = job.job_id
+    print(job.start_time)
     # generate page
     form = IdSearch()
-    return render(request, 'id_search.html', {'form': form})
+    return render(request, 'id_search.html', {'form': form, 'job_id': job_id})
 
 
-def show_genomes(request):
-    print(request.POST)
+def show_genomes(request, job_id):
     if 'id_list' in request.POST.keys():
         id_list_string = request.POST['id_list']
         print(id_list_string)
@@ -56,12 +57,14 @@ def show_genomes(request):
         genome_text =[(json.dumps(genome_info[genome.id]), '%s (%s)' % (genome.organism, genome.id)) for genome in genome_list]
         #### I know this should not be defined here. If you know a better way, feel free to fix it ####
         class VerifyGenomes(forms.Form):
-            genomes = forms.MultipleChoiceField(help_text='Select genomes to keep',
+            genomes = forms.MultipleChoiceField(
+                                                help_text='Select genomes to keep',
                                                 choices=genome_text,
-                                                widget=forms.CheckboxSelectMultiple(attrs={'inline': True}),
+                                                widget=forms.CheckboxSelectMultiple(attrs={'inline': True, 'checked': True}),
+                                                initial={'choices': genome_text}
                                                 )
         form = VerifyGenomes()
-        return render(request, 'show_genomes.html', {'form': form})
+        return render(request, 'show_genomes.html', {'form': form, 'job_id': job_id})
     elif 'genomes' in request.POST.keys():
         print('got these...')
         results = [*request.POST.lists()]
@@ -72,13 +75,14 @@ def show_genomes(request):
                 approved_genomes = pair[1]
         print(approved_genomes)
         # call Celery task
-        create_genomes.delay(approved_genomes)
-        MotifSearchModel.objects.all().delete()
-        HMMSearchModel.objects.all().delete()
-        return redirect('/wait_for_genomes')
+        task_id = create_genomes.delay(approved_genomes, job_id).id
+        current_job = JobModel.objects.get(job_id=job_id)
+        task = TaskModel(task_id=str(task_id), job=current_job)
+        task.save()
+        return redirect('/wait_for_genomes/%s' % str(task_id))
 
 
-def wait_for_genomes(request):
+def wait_for_genomes(request, task_id):
     i = inspect()
     print(i)
     print(i.active())
@@ -88,16 +92,19 @@ def wait_for_genomes(request):
         #time.sleep(5)  # wait 10 seconds if there is an active task
         return render(request, 'waiting.html')
     else:
-        return HttpResponseRedirect('/select_method')
+        # retrieve current job ID
+        current_task = TaskModel.objects.get(task_id=task_id)
+        job_id = current_task.job.job_id
+        return HttpResponseRedirect('/select_method/%s' % job_id)
 
 
-def select_method(request):
-    motif_searches = MotifSearchModel.objects.all()
-    hmm_searches = HMMSearchModel.objects.all()
-    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'hmm_searches': hmm_searches})
+def select_method(request, job_id):
+    motif_searches = MotifSearchModel.objects.filter(job__job_id=job_id)
+    hmm_searches = HMMSearchModel.objects.filter(job__job_id=job_id)
+    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'job_id': job_id, 'hmm_searches': hmm_searches})
 
 
-def motif_search(request):
+def motif_search(request, job_id):
     if 'gene_name' in request.POST.keys():
         gene_name = request.POST['gene_name']
         motif_list = request.POST['motif_list']
@@ -107,15 +114,16 @@ def motif_search(request):
             motif_text = motif_text.strip()
             if len(motif_text) == 0:
                 continue  # skip blanks
-            motif_entry = MotifModel(motif_text=motif_text, in_search=motif_search_entry)
+            current_job = JobModel.objects.get(job_id=job_id)
+            motif_entry = MotifModel(motif_text=motif_text, in_search=motif_search_entry, job=current_job)
             motif_entry.save()
-        return redirect('/select_method')
+        return redirect('/select_method/%s' % job_id)
     else:
         form = MotifSearchForm()
-        return render(request, 'motif_search.html', {'form': form})
+        return render(request, 'motif_search.html', {'form': form, 'job_id': job_id})
 
 
-def hmm_search(request):
+def hmm_search(request, job_id):
     if 'gene_name' in request.POST.keys():
         gene_name = request.POST['gene_name']
         hmm_file_obj = list(request.FILES.values())[0]
@@ -123,18 +131,24 @@ def hmm_search(request):
         with open(file_name, 'wb') as hmm_file:
             hmm_file.write(hmm_file_obj.read())
         threshold = float(request.POST['cutoff'])
-        hmm_search_entry = HMMSearchModel(hmm_path=file_name, threshold=threshold, gene_name=gene_name)
+        current_job = JobModel.objects.get(job_id=job_id)
+        hmm_search_entry = HMMSearchModel(hmm_path=file_name, threshold=threshold, gene_name=gene_name, job=current_job)
         hmm_search_entry.save()
-        return redirect('/select_method')
+        return redirect('/select_method/%s' % job_id)
     else:
         form = HMMSearchForm()
-        return render(request, 'hmm_search.html', {'form': form})
+        return render(request, 'hmm_search.html', {'form': form, 'job_id': job_id})
 
 
-def run_search(request):
-    all_genomes = GenomeModel.objects.all()
-    all_motifs = MotifSearchModel.objects.all()
-    all_hmms = HMMSearchModel.objects.all()
+def run_search(request, job_id):
+    all_genome_entries = GenomeUse.objects.filter(job_id=job_id).values()
+    all_motifs = MotifSearchModel.objects.filter(job__job_id=job_id)
+    all_hmms = HMMSearchModel.objects.filter(job__job_id=job_id)
+    # retrieve genome objects
+    all_genomes = []
+    genome_ids = [item['genome_id'] for item in all_genome_entries]
+    all_genomes = [GenomeModel.objects.get(genome_id=item) for item in genome_ids]
+    # run searches
     genome_names = [item.organism for item in all_genomes]
     motif_names = [item.gene_name for item in all_motifs]
     results = []

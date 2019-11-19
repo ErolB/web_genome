@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>Create a new motif search.</h1>
-    <form action="/motif_search" method="POST">
+    <form action="/motif_search/{{ job_id }}" method="POST">
         {% csrf_token %}
         {{ form }}
         <input type="submit">

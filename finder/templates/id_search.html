@@ -7,7 +7,7 @@
 <body>
     <h1> Enter a list of genome IDs </h1>
     <h2> Use commas or newlines as delimiters </h2>
-    <form action="/show_genomes" method="POST">
+    <form action="/show_genomes/{{job_id}}" method="POST">
         {% csrf_token %}
         {{form}}
         <input type="submit"/>
