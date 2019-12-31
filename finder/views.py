@@ -106,16 +106,16 @@ def select_method(request, job_id):
 
 def motif_search(request, job_id):
     if 'gene_name' in request.POST.keys():
+        current_job = JobModel.objects.get(job_id=job_id)
         gene_name = request.POST['gene_name']
         motif_list = request.POST['motif_list']
-        motif_search_entry = MotifSearchModel(gene_name=gene_name)
+        motif_search_entry = MotifSearchModel(gene_name=gene_name, job=current_job)
         motif_search_entry.save()
         for motif_text in motif_list.split('\n'):
             motif_text = motif_text.strip()
             if len(motif_text) == 0:
                 continue  # skip blanks
-            current_job = JobModel.objects.get(job_id=job_id)
-            motif_entry = MotifModel(motif_text=motif_text, in_search=motif_search_entry, job=current_job)
+            motif_entry = MotifModel(motif_text=motif_text, in_search=motif_search_entry)
             motif_entry.save()
         return redirect('/select_method/%s' % job_id)
     else:

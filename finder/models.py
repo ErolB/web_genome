@@ -31,7 +31,7 @@ class GenomeModel(models.Model):
 # protein-coding gene
 class GeneModel(models.Model):
     name = models.CharField(max_length=1000)
-    sequence = models.CharField(max_length=10000)
+    sequence = models.CharField(max_length=50000)
     patric_id = models.CharField(max_length=100)
     fig_id = models.CharField(max_length=100)
     in_genome = models.ForeignKey(GenomeModel, on_delete=models.CASCADE)
