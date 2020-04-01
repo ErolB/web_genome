@@ -8,6 +8,7 @@ import datetime
 @shared_task
 def create_genomes(approved_genomes, job_id):
     genome_objs = retrieval.retrieve_sequences(approved_genomes)
+    print(genome_objs)
     for genome in genome_objs:
         current_genomes = GenomeModel.objects.all()  # load list of genomes in storage
         current_genome_ids = [item.genome_id for item in current_genomes]

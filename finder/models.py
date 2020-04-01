@@ -56,3 +56,11 @@ class HMMSearchModel(models.Model):
     threshold = models.FloatField()
     gene_name = models.CharField(max_length=200)
     job = models.ForeignKey(JobModel, on_delete=models.CASCADE, default=None)
+
+
+# PSSM objects
+class PSSMSearchModel(models.Model):
+    pssm_path = models.CharField(max_length=500)
+    threshold = models.FloatField()
+    gene_name = models.CharField(max_length=200)
+    job = models.ForeignKey(JobModel, on_delete=models.CASCADE, default=None)

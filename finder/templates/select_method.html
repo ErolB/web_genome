@@ -13,13 +13,19 @@
     <h2>Motif Searches</h2>
     {% for search in motif_searches %}
         <h3>{{ search.gene_name }}</h3>
-        <a href="{% url 'delete_motif' search.id %}">Delete</a>
+        <a href="/delete_motif/{{ search.id }}">Delete</a>
         <br>
     {% endfor %}
     <h2>HMM Searches</h2>
     {% for search in hmm_searches %}
         <h3>{{ search.gene_name }}</h3>
-        <a href="{% url 'delete_hmm' search.id %}">Delete</a>
+        <a href="/delete_hmm/{{ search.id }}">Delete</a>
+        <br>
+    {% endfor %}
+    <h2>PSSM Searches</h2>
+    {% for search in pssm_searches %}
+        <h3>{{ search.gene_name }}</h3>
+        <a href="{% url 'delete_pssm' search.id %}">Delete</a>
         <br>
     {% endfor %}
 </body>

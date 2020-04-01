@@ -101,7 +101,9 @@ def wait_for_genomes(request, task_id):
 def select_method(request, job_id):
     motif_searches = MotifSearchModel.objects.filter(job__job_id=job_id)
     hmm_searches = HMMSearchModel.objects.filter(job__job_id=job_id)
-    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'job_id': job_id, 'hmm_searches': hmm_searches})
+    pssm_searches = PSSMSearchModel.objects.filter(job__job_id=job_id)
+    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'job_id': job_id,
+                                                  'hmm_searches': hmm_searches, 'pssm_searches': pssm_searches})
 
 
 def motif_search(request, job_id):
@@ -140,10 +142,28 @@ def hmm_search(request, job_id):
         return render(request, 'hmm_search.html', {'form': form, 'job_id': job_id})
 
 
+def pssm_search(request, job_id):
+    if 'gene_name' in request.POST.keys():
+        gene_name = request.POST['gene_name']
+        pssm_file_obj = list(request.FILES.values())[0]
+        file_name = 'pssms/%s.txt' % gene_name
+        with open(file_name, 'wb') as pssm_file:
+            pssm_file.write(pssm_file_obj.read())
+        threshold = float(request.POST['cutoff'])
+        current_job = JobModel.objects.get(job_id=job_id)
+        pssm_search_entry = PSSMSearchModel(pssm_path=file_name, threshold=threshold, gene_name=gene_name, job=current_job)
+        pssm_search_entry.save()
+        return redirect('/select_method/%s' % job_id)
+    else:
+        form = PSSMSearchForm()
+        return render(request, 'pssm_search.html', {'form': form, 'job_id': job_id})
+
+
 def run_search(request, job_id):
     all_genome_entries = GenomeUse.objects.filter(job_id=job_id).values()
     all_motifs = MotifSearchModel.objects.filter(job__job_id=job_id)
     all_hmms = HMMSearchModel.objects.filter(job__job_id=job_id)
+    all_pssms = PSSMSearchModel.objects.filter(job__job_id=job_id)
     # retrieve genome objects
     all_genomes = []
     genome_ids = [item['genome_id'] for item in all_genome_entries]
@@ -188,9 +208,20 @@ def run_search(request, job_id):
                 gene_name = [gene.name for gene in relevant_genes if gene.patric_id == fig][0]
                 hmm_entry['matches'].append({'url': url, 'name': gene_name})
             genome_result['hmms'].append(hmm_entry)
+        # process PSSM searches
+        genome_result['pssms'] = []
+        for pssm in all_pssms:
+            pssm_entry = {'name': pssm.gene_name, 'matches': []}
+            fig_ids = search_tools.search_msa(genome.genome_id, pssm.pssm_path, threshold=pssm.threshold)
+            for fig in fig_ids:
+                url = 'https://www.patricbrc.org/view/Feature/%s#view_tab=overview' % str(fig)
+                gene_name = [gene.name for gene in relevant_genes if gene.patric_id == fig][0]
+                pssm_entry['matches'].append({'url': url, 'name': gene_name})
+            genome_result['pssms'].append(pssm_entry)
         results.append(genome_result)
     headings = [motif.gene_name for motif in all_motifs]
     headings.extend([hmm.gene_name for hmm in all_hmms])
+    headings.extend([pssm.gene_name for pssm in all_pssms])
     # write report file (to be downloaded later)
     used_ids = os.listdir('reports/')
     report_id = str(random.randint(1000000, 9999999))
@@ -199,7 +230,8 @@ def run_search(request, job_id):
     with open('reports/%s.csv' % report_id, 'w') as report_file:
         hmm_names = [item.gene_name for item in all_hmms]
         motif_names = [item.gene_name for item in all_motifs]
-        column_names = ['organism'] + hmm_names + motif_names
+        pssm_names = [item.gene_name for item in all_pssms]
+        column_names = ['organism'] + hmm_names + motif_names + pssm_names
         writer = csv.DictWriter(fieldnames=column_names, f=report_file)
         writer.writeheader()
         for genome_entry in results:
@@ -210,6 +242,9 @@ def run_search(request, job_id):
             for hmm_entry in genome_entry['hmms']:
                 url_list = ' / '.join([item['url'] for item in hmm_entry['matches']])
                 new_row[hmm_entry['name']] = url_list
+            for pssm_entry in genome_entry['pssms']:
+                url_list = ' / '.join([item['url'] for item in pssm_entry['matches']])
+                new_row[pssm_entry['name']] = url_list
             writer.writerow(new_row)
 
     return render(request, 'result_page.html', {'results': results, 'headings': headings, 'report': int(report_id)})
@@ -220,12 +255,33 @@ def download(request, report_id):
         response = HttpResponse(report_file.read(), content_type="application/vnd.ms-excel")
     return response
 
+def delete_motif(request, search_id):
+    current_search = MotifSearchModel.objects.get(id=search_id)
+    current_job = current_search.job.job_id
+    current_search.delete()
+    motif_searches = MotifSearchModel.objects.filter(job__job_id=current_job)
+    hmm_searches = HMMSearchModel.objects.filter(job__job_id=current_job)
+    pssm_searches = PSSMSearchModel.objects.filter(job__job_id=current_job)
+    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'job_id': current_job,
+                                                  'hmm_searches': hmm_searches, 'pssm_searches': pssm_searches})
 
-class DeleteMotif(DeleteView):
-    model = MotifSearchModel
-    success_url = '/select_method'
+def delete_hmm(request, search_id):
+    current_search = HMMSearchModel.objects.get(id=search_id)
+    current_job = current_search.job.job_id
+    current_search.delete()
+    motif_searches = MotifSearchModel.objects.filter(job__job_id=current_job)
+    hmm_searches = HMMSearchModel.objects.filter(job__job_id=current_job)
+    pssm_searches = PSSMSearchModel.objects.filter(job__job_id=current_job)
+    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'job_id': current_job,
+                                                  'hmm_searches': hmm_searches, 'pssm_searches': pssm_searches})
 
+def delete_pssm(request, search_id):
+    current_search = PSSMSearchModel.objects.get(id=search_id)
+    current_job = current_search.job.job_id
+    current_search.delete()
+    motif_searches = MotifSearchModel.objects.filter(job__job_id=current_job)
+    hmm_searches = HMMSearchModel.objects.filter(job__job_id=current_job)
+    pssm_searches = PSSMSearchModel.objects.filter(job__job_id=current_job)
+    return render(request, 'select_method.html', {'motif_searches': motif_searches, 'job_id': current_job,
+                                                  'hmm_searches': hmm_searches, 'pssm_searches': pssm_searches})
 
-class DeleteHMM(DeleteView):
-    model = HMMSearchModel
-    success_url = '/select_method'

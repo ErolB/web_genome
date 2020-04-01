@@ -38,6 +38,13 @@
                     {% endfor %}
                 </td>
             {% endfor %}
+            {% for pssm in genome_result.pssms %}
+                <td>
+                    {% for match in pssm.matches %}
+                        <a href={{match.url}}> {{match.name}} </a><br>
+                    {% endfor %}
+                </td>
+            {% endfor %}
         </tr>
         {% endfor %}
     </table>

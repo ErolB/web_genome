@@ -11,3 +11,8 @@ class HMMSearchForm(forms.Form):
     gene_name = forms.CharField(label='Enter Gene Name')
     hmm_file = forms.FileField(label='Upload HMM File')
     cutoff = forms.FloatField(label='Enter E-value cutoff', initial=0.000001)
+
+class PSSMSearchForm(forms.Form):
+    gene_name = forms.CharField(label='Enter Gene Name')
+    pssm_file = forms.FileField(label='Upload PSSM File')
+    cutoff = forms.FloatField(label='Enter E-value cutoff', initial=0.000001)

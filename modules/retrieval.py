@@ -78,9 +78,11 @@ def retrieve_sequences(genome_info, worker_count=5):
             data_queue.put(genome)
     # use multiple threads to get genomes
     max_load = int(len(genome_info)/worker_count) + 1
+    print(max_load)
     threads = []
     done = False
     for i in range(worker_count):
+        print('creating worker')
         if done:
             break
         thread_tasks = []

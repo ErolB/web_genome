@@ -9,8 +9,10 @@ urlpatterns = [
     path('wait_for_genomes/<str:task_id>', wait_for_genomes),
     path('motif_search/<int:job_id>', motif_search),
     path('hmm_search/<int:job_id>', hmm_search),
+    path('pssm_search/<int:job_id>', pssm_search),
     path('run_search/<int:job_id>', run_search),
     path('export/<int:report_id>/', download),
-    path('delete_m/<int:pk>', DeleteMotif.as_view(), name='delete_motif'),
-    path('delete_h/<int:pk>', DeleteHMM.as_view(), name='delete_hmm')
+    path('delete_motif/<int:search_id>', delete_motif),
+    path('delete_hmm/<int:search_id>', delete_hmm),
+    path('delete_pssm/<int:search_id>', delete_pssm)
 ]
